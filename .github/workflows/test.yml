@@ -13,26 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      # Étape 1: Installer manget
-      - name: Install manget
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install manget
+      # Étape 1: Installer aria2
+      - name: Install aria2
+        run: sudo apt-get install -y aria2
 
-      # Étape 2: Télécharger le torrent avec manget
-      - name: Download Torrent with manget
+      # Étape 2: Télécharger le torrent avec aria2c
+      - name: Download Torrent with aria2c
         run: |
           magnet_link="${{ github.event.inputs.magnet-link }}"
-          manget download --magnet="$magnet_link" --output-dir=/tmp/manga_download
+          aria2c --seed-time=0 --dir=/tmp/manga_download "$magnet_link"
 
-      # Étape 3: Désactiver le seeding (Manget désactive généralement le seeding après le téléchargement)
+      # Étape 3: Désactiver le seeding (aria2c arrête le seeding avec --seed-time=0)
       - name: Disable seeding after download
         run: |
-          # Manget gère le seeding, il peut être nécessaire d'ajouter un flag pour désactiver le seeding
-          # Si nécessaire, vérifier la commande de manget pour ajouter un comportement de non-seeding explicite.
-          # Par exemple, ajouter --no-seed si manget le permet.
-          echo "Seeding is disabled by default in manget"
+          echo "Seeding is disabled by default with --seed-time=0 in aria2c"
 
       # Étape 4: Télécharger l'artefact pour 1 jour
       - name: Upload Artifact
