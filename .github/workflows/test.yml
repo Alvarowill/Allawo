@@ -1,0 +1,37 @@
+name: Download Manga Torrent and Upload as Artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  download-torrent:
+    runs-on: ubuntu-latest
+    steps:
+
+      # Étape 1: Installer manget
+      - name: Install manget
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install manget
+
+      # Étape 2: Télécharger le torrent avec manget
+      - name: Download Torrent with manget
+        run: |
+          manget download --torrent-file=path/to/your/torrent/file.torrent --output-dir=/tmp/manga_download
+
+      # Étape 3: Désactiver le seeding (Manget désactive généralement le seeding après le téléchargement)
+      - name: Disable seeding after download
+        run: |
+          # Manget gère le seeding, il peut être nécessaire d'ajouter un flag pour désactiver le seeding
+          # Si nécessaire, vérifier la commande de manget pour ajouter un comportement de non-seeding explicite.
+          # Par exemple, ajouter --no-seed si manget le permet.
+          echo "Seeding is disabled by default in manget"
+
+      # Étape 4: Télécharger l'artefact pour 1 jour
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: downloaded-manga-torrent
+          path: /tmp/manga_download/
+          retention-days: 1
