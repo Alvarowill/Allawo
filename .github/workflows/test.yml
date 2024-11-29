@@ -1,4 +1,4 @@
-name: Download Manga Torrent and Upload as Artifact
+name: Download Manga Torrent and Send to Telegram
 
 on:
   workflow_dispatch:
@@ -6,7 +6,12 @@ on:
       magnet-link:
         description: 'Magnet link for the torrent'
         required: true
-        default: 'magnet:?xt=urn:btih:...'  # Remplace avec un lien magnet par défaut si tu veux
+      telegram-bot-token:
+        description: 'Telegram bot token'
+        required: true
+      telegram-channel-id:
+        description: 'Telegram channel ID'
+        required: true
 
 jobs:
   download-torrent:
@@ -23,15 +28,24 @@ jobs:
           magnet_link="${{ github.event.inputs.magnet-link }}"
           aria2c --seed-time=0 --dir=/tmp/manga_download "$magnet_link"
 
-      # Étape 3: Désactiver le seeding (aria2c arrête le seeding avec --seed-time=0)
-      - name: Disable seeding after download
-        run: |
-          echo "Seeding is disabled by default with --seed-time=0 in aria2c"
+      # Étape 3: Installer cURL (pour envoyer le fichier via l'API Telegram)
+      - name: Install cURL
+        run: sudo apt-get install -y curl
 
-      # Étape 4: Télécharger l'artefact pour 1 jour
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: downloaded-manga-torrent
-          path: /tmp/manga_download/
-          retention-days: 1
+      # Étape 4: Envoyer le fichier téléchargé à Telegram
+      - name: Send the downloaded file to Telegram
+        run: |
+          bot_token="${{ github.event.inputs.telegram-bot-token }}"
+          channel_id="${{ github.event.inputs.telegram-channel-id }}"
+          file_path=$(ls /tmp/manga_download)
+
+          # Vérifie que le fichier existe
+          if [ -z "$file_path" ]; then
+            echo "No file found in /tmp/manga_download"
+            exit 1
+          fi
+
+          # Envoie le fichier via l'API Telegram
+          curl -X POST "https://api.telegram.org/bot$bot_token/sendDocument" \
+            -F chat_id="$channel_id" \
+            -F document=@"$file_path"
