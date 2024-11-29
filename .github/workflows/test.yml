@@ -2,6 +2,11 @@ name: Download Manga Torrent and Upload as Artifact
 
 on:
   workflow_dispatch:
+    inputs:
+      magnet-link:
+        description: 'Magnet link for the torrent'
+        required: true
+        default: 'magnet:?xt=urn:btih:...'  # Remplace avec un lien magnet par défaut si tu veux
 
 jobs:
   download-torrent:
@@ -18,7 +23,8 @@ jobs:
       # Étape 2: Télécharger le torrent avec manget
       - name: Download Torrent with manget
         run: |
-          manget download --torrent-file=path/to/your/torrent/file.torrent --output-dir=/tmp/manga_download
+          magnet_link="${{ github.event.inputs.magnet-link }}"
+          manget download --magnet="$magnet_link" --output-dir=/tmp/manga_download
 
       # Étape 3: Désactiver le seeding (Manget désactive généralement le seeding après le téléchargement)
       - name: Disable seeding after download
