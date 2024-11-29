@@ -27,25 +27,32 @@ jobs:
         run: |
           magnet_link="${{ github.event.inputs.magnet-link }}"
           aria2c --seed-time=0 --dir=/tmp/manga_download "$magnet_link"
+          # Afficher les fichiers téléchargés
+          echo "Downloaded files:"
+          ls -l /tmp/manga_download
 
-      # Étape 3: Installer cURL (pour envoyer le fichier via l'API Telegram)
+      # Étape 3: Installer cURL
       - name: Install cURL
         run: sudo apt-get install -y curl
 
-      # Étape 4: Envoyer le fichier téléchargé à Telegram
-      - name: Send the downloaded file to Telegram
+      # Étape 4: Vérifier l'existence du fichier et envoyer à Telegram
+      - name: Check if file exists and send to Telegram
         run: |
           bot_token="${{ github.event.inputs.telegram-bot-token }}"
           channel_id="${{ github.event.inputs.telegram-channel-id }}"
-          file_path=$(ls /tmp/manga_download)
+          
+          # Vérification des fichiers téléchargés
+          downloaded_file=$(ls /tmp/manga_download | head -n 1)
 
-          # Vérifie que le fichier existe
-          if [ -z "$file_path" ]; then
+          if [ -z "$downloaded_file" ]; then
             echo "No file found in /tmp/manga_download"
             exit 1
           fi
 
-          # Envoie le fichier via l'API Telegram
+          # Afficher le chemin du fichier
+          echo "File found: $downloaded_file"
+
+          # Envoi du fichier via Telegram
           curl -X POST "https://api.telegram.org/bot$bot_token/sendDocument" \
             -F chat_id="$channel_id" \
-            -F document=@"$file_path"
+            -F document=@" /tmp/manga_download/$downloaded_file"
