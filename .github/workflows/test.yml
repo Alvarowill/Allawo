@@ -1,4 +1,4 @@
-name: Download Manga Torrent and Send to Telegram
+name: Download Video Torrent and Send to Telegram
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
         required: true
 
 jobs:
-  download-torrent:
+  download-video:
     runs-on: ubuntu-latest
     steps:
 
@@ -22,37 +22,37 @@ jobs:
       - name: Install aria2
         run: sudo apt-get install -y aria2
 
-      # Étape 2: Télécharger le torrent avec aria2c
-      - name: Download Torrent with aria2c
+      # Étape 2: Télécharger la vidéo avec aria2c
+      - name: Download Video with aria2c
         run: |
           magnet_link="${{ github.event.inputs.magnet-link }}"
-          aria2c --seed-time=0 --dir=/tmp/manga_download "$magnet_link"
+          aria2c --seed-time=0 --dir=/tmp/video_download "$magnet_link"
           # Afficher les fichiers téléchargés
           echo "Downloaded files:"
-          ls -l /tmp/manga_download
+          ls -l /tmp/video_download
 
       # Étape 3: Installer cURL
       - name: Install cURL
         run: sudo apt-get install -y curl
 
-      # Étape 4: Vérifier l'existence du fichier et envoyer à Telegram
-      - name: Check if file exists and send to Telegram
+      # Étape 4: Vérifier l'existence de la vidéo et l'envoyer à Telegram
+      - name: Check if video exists and send to Telegram
         run: |
           bot_token="${{ github.event.inputs.telegram-bot-token }}"
           channel_id="${{ github.event.inputs.telegram-channel-id }}"
           
-          # Vérification des fichiers téléchargés
-          downloaded_file=$(ls /tmp/manga_download | head -n 1)
+          # Identifier la vidéo téléchargée
+          video_file=$(ls /tmp/video_download | grep -E '\.mp4$' | head -n 1)
 
-          if [ -z "$downloaded_file" ]; then
-            echo "No file found in /tmp/manga_download"
+          if [ -z "$video_file" ]; then
+            echo "No video file found in /tmp/video_download"
             exit 1
           fi
 
           # Afficher le chemin du fichier
-          echo "File found: $downloaded_file"
+          echo "Video found: /tmp/video_download/$video_file"
 
-          # Envoi du fichier via Telegram
-          curl -X POST "https://api.telegram.org/bot$bot_token/sendDocument" \
+          # Envoi de la vidéo via Telegram
+          curl -X POST "https://api.telegram.org/bot$bot_token/sendVideo" \
             -F chat_id="$channel_id" \
-            -F document=@" /tmp/manga_download/$downloaded_file"
+            -F video=@" /tmp/video_download/$video_file"
