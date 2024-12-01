@@ -1,33 +1,21 @@
-name: Send Telegram Message
+name: Fix apt issues
 
 on:
-  workflow_dispatch:
-    inputs:
-      bot_token:
-        description: "Le Token de votre bot Telegram"
-        required: true
-      chat_id:
-        description: "L'ID du canal ou du groupe Telegram"
-        required: true
+  push:
+    branches:
+      - main
 
 jobs:
-  sendMessage:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up Docker
-      run: sudo apt-get install -y docker.io
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-    - name: Start Telegram Bot API Server
+    - name: Update and fix apt dependencies
       run: |
-        docker run -d \
-          --name telegram_bot_api \
-          -p 8081:8081 \
-          tdlib/telegram-bot-api
-
-    - name: Send message to Telegram
-      run: |
-        curl -X POST \
-          -H "Content-Type: application/json" \
-          -d '{"chat_id": "${{ github.event.inputs.chat_id }}", "text": "Bonjour depuis GitHub Actions !"}' \
-          "http://localhost:8081/bot${{ github.event.inputs.bot_token }}/sendMessage"
+        sudo apt-get update
+        sudo apt-get --fix-broken install -y
+        sudo apt-get clean
+        sudo apt-get install -y <package_name>
