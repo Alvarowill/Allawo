@@ -1,72 +1,33 @@
-name: Download and Segment Video for Telegram
+name: Send Telegram Message
 
 on:
   workflow_dispatch:
     inputs:
-      magnet-link:
-        description: 'Magnet link for the torrent'
+      bot_token:
+        description: "Le Token de votre bot Telegram"
         required: true
-      telegram-bot-token:
-        description: 'Telegram bot token'
-        required: true
-      telegram-channel-id:
-        description: 'Telegram channel ID'
+      chat_id:
+        description: "L'ID du canal ou du groupe Telegram"
         required: true
 
 jobs:
-  process-video:
+  sendMessage:
     runs-on: ubuntu-latest
+
     steps:
+    - name: Set up Docker
+      run: sudo apt-get install -y docker.io
 
-      # Étape 1: Installer aria2
-      - name: Install aria2
-        run: sudo apt-get install -y aria2
+    - name: Start Telegram Bot API Server
+      run: |
+        docker run -d \
+          --name telegram_bot_api \
+          -p 8081:8081 \
+          tdlib/telegram-bot-api
 
-      # Étape 2: Télécharger la vidéo avec aria2c
-      - name: Download Video
-        run: |
-          magnet_link="${{ github.event.inputs.magnet-link }}"
-          aria2c --seed-time=0 --dir=/tmp/video_download "$magnet_link"
-          echo "Downloaded files:"
-          ls -l /tmp/video_download
-
-      # Étape 3: Installer ffmpeg
-      - name: Install ffmpeg
-        run: sudo apt-get install -y ffmpeg
-
-      # Étape 4: Segmenter la vidéo en parties d'une durée fixe (~10 minutes)
-      - name: Segment Video by Duration
-        run: |
-          video_file=$(ls /tmp/video_download | grep -E '\.(mp4|mkv|avi)$' | head -n 1)
-
-          if [ -z "$video_file" ]; then
-            echo "No video file found in /tmp/video_download"
-            exit 1
-          fi
-
-          echo "Segmenting video: $video_file"
-          mkdir -p /tmp/video_segments
-
-          # Découper la vidéo en parties de 10 minutes (ajustable)
-          ffmpeg -i "/tmp/video_download/$video_file" -c copy -f segment \
-          -segment_time 600 -reset_timestamps 1 \
-          "/tmp/video_segments/part_%03d.mp4"
-
-          echo "Segments created:"
-          ls -l /tmp/video_segments
-
-      # Étape 5: Envoyer chaque segment à Telegram
-      - name: Send Segments to Telegram
-        run: |
-          bot_token="${{ github.event.inputs.telegram-bot-token }}"
-          channel_id="${{ github.event.inputs.telegram-channel-id }}"
-
-          for segment in /tmp/video_segments/part_*.mp4; do
-            echo "Sending segment: $segment"
-
-            curl -X POST "https://api.telegram.org/bot$bot_token/sendVideo" \
-              -F chat_id="$channel_id" \
-              -F video=@"$segment"
-
-            echo "Segment sent: $segment"
-          done
+    - name: Send message to Telegram
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"chat_id": "${{ github.event.inputs.chat_id }}", "text": "Bonjour depuis GitHub Actions !"}' \
+          "http://localhost:8081/bot${{ github.event.inputs.bot_token }}/sendMessage"
