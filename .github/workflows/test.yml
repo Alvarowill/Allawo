@@ -1,21 +1,32 @@
-name: Fix apt issues
+name: Send Telegram Message
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      bot_token:
+        description: "Le Token de votre bot Telegram (fourni par BotFather)"
+        required: true
+      chat_id:
+        description: "L'ID du canal ou groupe Telegram"
+        required: true
 
 jobs:
-  build:
+  sendMessage:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Update and fix apt dependencies
+    - name: Mise à jour du système
       run: |
         sudo apt-get update
         sudo apt-get --fix-broken install -y
-        sudo apt-get clean
-        sudo apt-get install -y <package_name>
+        sudo apt-get install -y curl
+
+    - name: Envoi d'un message dans le canal Telegram
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ github.event.inputs.bot_token }}
+        TELEGRAM_CHAT_ID: ${{ github.event.inputs.chat_id }}
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"chat_id": "${TELEGRAM_CHAT_ID}", "text": "Bonjour depuis GitHub Actions !"}' \
+          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
