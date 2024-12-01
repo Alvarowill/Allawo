@@ -1,4 +1,4 @@
-name: Send Telegram Message
+name: Send Telegram Photo
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  sendMessage:
+  sendPhoto:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +21,14 @@ jobs:
         sudo apt-get --fix-broken install -y
         sudo apt-get install -y curl
 
-    - name: Envoi d'un message dans le canal Telegram
+    - name: Envoi d'une photo dans le canal Telegram
       env:
         TELEGRAM_BOT_TOKEN: ${{ github.event.inputs.bot_token }}
         TELEGRAM_CHAT_ID: ${{ github.event.inputs.chat_id }}
       run: |
+        PHOTO_URL="https://www.example.com/path_to_image.jpg"  # Remplacez cette URL par celle de l'image que vous souhaitez envoyer
         curl -X POST \
-          -H "Content-Type: application/json" \
-          -d '{"chat_id": "${TELEGRAM_CHAT_ID}", "text": "Bonjour depuis GitHub Actions !"}' \
-          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
+          -H "Content-Type: multipart/form-data" \
+          -F "chat_id=${TELEGRAM_CHAT_ID}" \
+          -F "photo=${PHOTO_URL}" \
+          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto"
