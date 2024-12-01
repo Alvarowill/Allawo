@@ -1,4 +1,4 @@
-name: Send Telegram Photo
+name: Send Telegram Video from Magnet
 
 on:
   workflow_dispatch:
@@ -9,26 +9,45 @@ on:
       chat_id:
         description: "L'ID du canal ou groupe Telegram"
         required: true
+      magnet_uri:
+        description: "Le Magnet URI du torrent à télécharger"
+        required: true
+      download_dir:
+        description: "Répertoire pour télécharger le fichier"
+        required: true
 
 jobs:
-  sendPhoto:
+  sendVideo:
     runs-on: ubuntu-latest
 
     steps:
     - name: Mise à jour du système
       run: |
         sudo apt-get update
-        sudo apt-get --fix-broken install -y
-        sudo apt-get install -y curl
+        sudo apt-get install -y aria2 curl
 
-    - name: Envoi d'une photo dans le canal Telegram
+    - name: Télécharger le fichier torrent via Magnet URI
+      run: |
+        mkdir -p ${{ github.event.inputs.download_dir }}
+        aria2c --dir=${{ github.event.inputs.download_dir }} "${{ github.event.inputs.magnet_uri }}"
+
+    - name: Envoi de la vidéo dans le canal Telegram
       env:
         TELEGRAM_BOT_TOKEN: ${{ github.event.inputs.bot_token }}
         TELEGRAM_CHAT_ID: ${{ github.event.inputs.chat_id }}
+        DOWNLOAD_DIR: ${{ github.event.inputs.download_dir }}
       run: |
-        PHOTO_URL="https://en.wikipedia.org/wiki/File:Image_created_with_a_mobile_phone.png"  # Remplacez cette URL par celle de l'image que vous souhaitez envoyer
+        # Trouver la vidéo téléchargée (en supposant qu'il s'agisse d'un seul fichier vidéo)
+        VIDEO_FILE=$(find ${DOWNLOAD_DIR} -type f -iname "*.mkv" -o -iname "*.mp4" -o -iname "*.avi" | head -n 1)
+        
+        if [[ -z "$VIDEO_FILE" ]]; then
+          echo "Aucun fichier vidéo trouvé."
+          exit 1
+        fi
+
+        # Envoi de la vidéo à Telegram
         curl -X POST \
           -H "Content-Type: multipart/form-data" \
           -F "chat_id=${TELEGRAM_CHAT_ID}" \
-          -F "photo=${PHOTO_URL}" \
-          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto"
+          -F "video=@${VIDEO_FILE}" \
+          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo"
